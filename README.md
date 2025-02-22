@@ -1,53 +1,148 @@
-# Synox [![Build Status](https://github.com/anishathalye/synox/actions/workflows/ci.yml/badge.svg)](https://github.com/anishathalye/synox/actions/workflows/ci.yml) [![Crates.io](https://img.shields.io/crates/v/synox.svg)](https://crates.io/crates/synox) [![Documentation](https://docs.rs/synox/badge.svg)](https://docs.rs/synox)
+**Отчет по работе с BlinkFill**
 
-Synox implements program synthesis of string transformations from input-output
-examples. Perhaps the most well-known use of string program synthesis in
-end-user programs is the [Flash
-Fill](https://support.microsoft.com/en-us/office/using-flash-fill-in-excel-3f9bcf1e-db93-4890-94a0-1578341f73f7)
-feature in Excel. These string transformations are learned from input-output
-examples.
+## 1. Введение
 
-Synox currently implements [BlinkFill (Singh '16, in Proc. VLDB)][blinkfill], an algorithm similar to Flash Fill.
+**BlinkFill** — это инструмент для синтеза программ, который используется для автоматического преобразования данных на основе примеров. Он позволяет на основе нескольких входных и выходных примеров автоматически выводить правила преобразования.
 
-## Usage
+## 2. Установка
 
-Add this to your `Cargo.toml`:
+BlinkFill реализован на языке **Rust**. Для его запуска необходимо выполнить следующие шаги:
 
-```toml
-[dependencies]
-synox = "0.1"
+1. **Установить Rust** (если он не установлен):
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   source $HOME/.cargo/env
+   ```
+2. **Клонировать репозиторий:**
+   ```bash
+   git clone https://github.com/anishathalye/synox.git
+   cd synox
+   ```
+3. **Собрать и запустить BlinkFill:**
+   ```bash
+   cargo run --bin blinkfill_test
+   ```
+
+## 3. Разбор примеров
+
+### Пример 1: Преобразование ФИО
+
+**Задача:** Преобразовать полное имя в инициалы и фамилию.
+
+**Входные данные:**
+
+```
+John Doe
+Alice Smith
+Bob Johnson
 ```
 
-## Example
+**Выходные данные:**
 
-Consider the following table, with a missing entry in an output column.
+```
+J. Doe
+A. Smith
+B. Johnson
+```
 
-| Name | Graduation Year | Output |
-|---|---|---|
-| Alyssa P. Hacker | 1985 | A. Hacker '85 |
-| Ben Bitdiddle | 2002 | B. Bitdiddle '02 |
-| Cy D. Fect | 2017 | ? |
-
-Synox can infer a program that automatically fills in the missing entry with
-"C. Fect '17".
+**Пример кода на Rust:**
 
 ```rust
-use synox::StringProgram;
-use synox::blinkfill;
+use synox::{StringProgram, blinkfill};
 
-let unpaired: &[Vec<&str>] = &[];
-let examples = &[(vec!["Alyssa P. Hacker", "1985"], "A. Hacker '85"   ),
-                 (vec!["Ben Bitdiddle",    "2002"], "B. Bitdiddle '02")];
+fn main() {
+    let unpaired: &[Vec<&str>] = &[];
+    let examples = &[(vec!["John Doe"], "J. Doe"),
+                     (vec!["Alice Smith"], "A. Smith")];
 
-let prog = blinkfill::learn(unpaired, examples)?;
-
-let result = prog.run(&["Cy D. Fect", "2017"])?;
-assert_eq!(result, "C. Fect '17");
+    let prog = blinkfill::learn(unpaired, examples).unwrap();
+    let result = prog.run(&["Bob Johnson"]).unwrap();
+    println!("{}", result); // Должно вывести: "B. Johnson"
+}
 ```
 
-## License
+### Пример 2: Форматирование дат
 
-Copyright (c) Anish Athalye. Released under the MIT License. See
-[LICENSE.md](LICENSE.md) for details.
+**Задача:** Преобразовать даты из формата "ГГГГ-ММ-ДД" в "ДД.ММ.ГГГГ".
 
-[blinkfill]: http://www.vldb.org/pvldb/vol9/p816-singh.pdf
+**Входные данные:**
+
+```
+2025-02-22
+2024-12-05
+2023-07-19
+```
+
+**Выходные данные:**
+
+```
+22.02.2025
+05.12.2024
+19.07.2023
+```
+
+**Пример кода на Rust:**
+
+```rust
+use synox::{StringProgram, blinkfill};
+
+fn main() {
+    let unpaired: &[Vec<&str>] = &[];
+    let examples = &[(vec!["2025-02-22"], "22.02.2025"),
+                     (vec!["2024-12-05"], "05.12.2024")];
+
+    let prog = blinkfill::learn(unpaired, examples).unwrap();
+    let result = prog.run(&["2023-07-19"]).unwrap();
+    println!("{}", result); // Должно вывести: "19.07.2023"
+}
+```
+
+### Пример 3: Преобразование телефонных номеров
+
+**Задача:** Преобразовать номера телефонов из формата "1234567890" в "(123) 456-7890".
+
+**Входные данные:**
+
+```
+1234567890
+9876543210
+5551234567
+```
+
+**Выходные данные:**
+
+```
+(123) 456-7890
+(987) 654-3210
+(555) 123-4567
+```
+
+**Пример кода на Rust:**
+
+```rust
+use synox::{StringProgram, blinkfill};
+
+fn main() {
+    let unpaired: &[Vec<&str>] = &[];
+    let examples = &[(vec!["1234567890"], "(123) 456-7890"),
+                     (vec!["9876543210"], "(987) 654-3210")];
+
+    let prog = blinkfill::learn(unpaired, examples).unwrap();
+    let result = prog.run(&["5551234567"]).unwrap();
+    println!("{}", result); // Должно вывести: "(555) 123-4567"
+}
+```
+
+## 4. Демонстрация работы
+
+Для демонстрации работы BlinkFill нужно:
+
+1. Запустить инструмент с `cargo run --bin blinkfill_test`.
+2. Ввести примеры входных данных.
+3. Показать сгенерированные правила и их применение к новым данным.
+
+## 5. Выводы
+
+BlinkFill позволяет автоматизировать преобразование строковых данных без явного программирования. Он полезен для обработки данных в табличном формате, текстовых файлах и базах данных. В примерах продемонстрировано, как можно преобразовывать имена, даты и телефонные номера.
+
+

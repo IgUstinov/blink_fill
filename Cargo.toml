@@ -19,3 +19,7 @@ lazy_static = "1.4.0"
 
 [dev-dependencies]
 version-sync = "0.9"
+
+[[bin]]
+name = "blinkfill_test"
+path = "main.rs"
